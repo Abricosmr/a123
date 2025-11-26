@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang='ru'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>NEO Game Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Основной экран */
+        #mainMenu {
+            padding: 20px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .game-card {
+            background: #222;
+            border: 2px solid #00f3ff;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .game-card:active {
+            transform: scale(0.95);
+        }
+
+        .game-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .game-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #00f3ff;
+        }
+
+        .game-description {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        /* Экран игры */
+        .game-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            flex-direction: column;
+        }
+
+        .game-header {
+            padding: 15px;
+            background: #111;
+            border-bottom: 2px solid #00f3ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: #00f3ff;
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .game-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .game-ui {
+            padding: 15px;
+            background: #111;
+            border-top: 2px solid #00f3ff;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .score {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00f3ff;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            padding: 10px 15px;
+            background: #00f3ff;
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Стили для змейки */
+        #snakeCanvas {
+            border: 2px solid #00f3ff;
+            background: #000;
+            max-width: 100%;
+            max-height: 60vh;
+        }
+
+        /* Стили для памяти */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .memory-card {
+            aspect-ratio: 1;
+            background: #00f3ff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .memory-card.flipped {
+            background: #333;
+            color: white;
+        }
+
+        /* Стили для лабиринта */
+        .maze-grid {
+            display: grid;
+            grid-template-columns: repeat(15, 20px);
+            grid-template-rows: repeat(15, 20px);
+            gap: 1px;
+            background: #333;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .maze-cell {
+            width: 20px;
+            height: 20px;
+            background: #000;
+        }
+
+        .maze-cell.wall {
+            background: #00f3ff;
+        }
+
+        .maze-cell.player {
+            background: #00ff88;
+            border-radius: 50%;
+        }
+
+        .maze-cell.end {
+            background: #ff00ff;
+        }
+
+        .maze-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            max-width: 200px;
+        }
+
+        .maze-btn {
+            width: 60px;
+            height: 60px;
+            background: #00f3ff;
+            border: none;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .maze-btn:active {
+            background: #00c4d4;
+        }
+
+        .maze-btn.up { grid-column: 2; grid-row: 1; }
+        .maze-btn.left { grid-column: 1; grid-row: 2; }
+        .maze-btn.right { grid-column: 3; grid-row: 2; }
+        .maze-btn.down { grid-column: 2; grid-row: 3; }
+
+        /* Стили для угадайки */
+        .guess-input {
+            padding: 15px;
+            font-size: 18px;
+            width: 200px;
+            text-align: center;
+            border: 2px solid #00f3ff;
+            border-radius: 10px;
+            background: #000;
+            color: white;
+            margin: 20px 0;
+        }
+
+        .guess-message {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+            min-height: 30px;
+        }
+
+        /* Стили для викторины */
+        .quiz-question {
+            font-size: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #00f3ff;
+        }
+
+        .quiz-answers {
+            display: grid;
+            gap: 10px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .quiz-answer {
+            padding: 15px;
+            background: #222;
+            border: 2px solid #00f3ff;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quiz-answer:active {
+            background: #00f3ff;
+            color: #000;
+        }
+
+        .quiz-result {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 15px 0;
+            min-height: 25px;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 480px) {
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .maze-grid {
+                grid-template-columns: repeat(15, 15px);
+                grid-template-rows: repeat(15, 15px);
+            }
+            
+            .maze-cell {
+                width: 15px;
+                height: 15px;
+            }
+            
+            .maze-btn {
+                width: 50px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Главное меню -->
+    <div id="mainMenu">
+        <h1 style="text-align: center; color: #00f3ff; margin: 20px 0;">🎮 NEO GAMES</h1>
+        
+        <div class="games-grid">
+            <!-- Змейка -->
+            <div class="game-card" onclick="openGame('snake')">
+                <div class="game-icon">🐍</div>
+                <div class="game-title">ЗМЕЙКА</div>
+                <div class="game-description">Собирай точки, избегай стен</div>
+            </div>
+
+            <!-- Память -->
+            <div class="game-card" onclick="openGame('memory')">
+                <div class="game-icon">🧠</div>
+                <div class="game-title">ПАМЯТЬ</div>
+                <div class="game-description">Найди все пары карточек</div>
+            </div>
+
+            <!-- 2048 -->
+            <div class="game-card" onclick="openGame('game2048')">
+                <div class="game-icon">🔢</div>
+                <div class="game-title">2048</div>
+                <div class="game-description">Объединяй числа</div>
+            </div>
+
+            <!-- Лабиринт -->
+            <div class="game-card" onclick="openGame('maze')">
+                <div class="game-icon">🧩</div>
+                <div class="game-title">ЛАБИРИНТ</div>
+                <div class="game-description">Найди путь к выходу</div>
+            </div>
+
+            <!-- Угадай число -->
+            <div class="game-card" onclick="openGame('guess')">
+                <div class="game-icon">🎯</div>
+                <div class="game-title">УГАДАЙКА</div>
+                <div class="game-description">Угадай число от 1 до 100</div>
+            </div>
+
+            <!-- Викторина -->
+            <div class="game-card" onclick="openGame('quiz')">
+                <div class="game-icon">📚</div>
+                <div class="game-title">ВИКТОРИНА</div>
+                <div class="game-description">Проверь свои знания</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран змейки -->
+    <div class="game-screen" id="snakeScreen">
+        <div class="game-header">
+            <div style="color: #00f3ff; font-weight: bold;">ЗМЕЙКА</div>
+            <button class="back-btn" onclick="closeGame('snake')">НАЗАД</button>
+        </div>
+        <div class="game-content">
+            <canvas id="snakeCanvas" width="300" height="300"></canvas>
+        </div>
+        <div class="game-ui">
+            <div class="game-stats">
+                <div class="score">ОЧКИ: <span id="snakeScore">0</span></div>
+                <div class="controls">
+                    <button class="control-btn" onclick="resetSnake()">СБРОС</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран памяти -->
+    <div class="game-screen" id="memoryScreen">
+        <div class="game-header">
+            <div style="color: #00f3ff; font-weight: bold;">ПАМЯТЬ</div>
+            <button class="back-btn" onclick="closeGame('memory')">НАЗАД</button>
+        </div>
+        <div class="game-content">
+            <div class="memory-grid" id="memoryGrid"></div>
+        </div>
+        <div class="game-ui">
+            <div class="game-stats">
+                <div class="score">ХОДЫ: <span id="memoryMoves">0</span></div>
+                <div class="controls">
+                    <button class="control-btn" onclick="resetMemory()">НОВАЯ ИГРА</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран 2048 -->
+    <div class="game-screen" id="game2048Screen">
+        <div class="game-header">
+            <div style="color: #00f3ff; font-weight: bold;">2048</div>
+            <button class="back-btn" onclick="closeGame('game2048')">НАЗАД</button>
+        </div>
+        <div class="game-content">
+            <div style="text-align: center;">
+                <div style="font-size: 18px; margin-bottom: 20px; color: #00f3ff;">СОБЕРИ ЧИСЛО 2048!</div>
+                <div style="background: #333; padding: 20px; border-radius: 10px; display: inline-block;">
+                    <div style="color: #ccc;">Используй стрелки для перемещения</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран лабиринта -->
+    <div class="game-screen" id="mazeScreen">
+        <div class="game-header">
+            <div style="color: #00f3ff; font-weight: bold;">ЛАБИРИНТ</div>
+            <button class="back-btn" onclick="closeGame('maze')">НАЗАД</button>
+        </div>
+        <div class="game-content">
+            <div class="maze-grid" id="mazeGrid"></div>
+            <div class="maze-controls">
+                <button class="maze-btn up" onclick="movePlayer('up')">↑</button>
+                <button class="maze-btn left" onclick="movePlayer('left')">←</button>
+                <button class="maze-btn right" onclick="movePlayer('right')">→</button>
+                <button class="maze-btn down" onclick="movePlayer('down')">↓</button>
+            </div>
+        </div>
+        <div class="game-ui">
+            <div class="game-stats">
+                <div class="score">ШАГИ: <span id="mazeSteps">0</span></div>
+                <div class="controls">
+                    <button class="control-btn" onclick="resetMaze()">НОВАЯ ИГРА</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран угадайки -->
+    <div class="game-screen" id="guessScreen">
+        <div class="game-header">
+            <div style="color: #00f3ff; font-weight: bold;">УГАДАЙ ЧИСЛО</div>
+            <button class="back-btn" onclick="closeGame('guess')">НАЗАД</button>
+        </div>
+        <div class="game-content">
+            <div style="text-align: center;">
+                <div style="margin-bottom: 20px; color: #00f3ff;">Я загадал число от 1 до 100</div>
+                <input type="number" class="guess-input" id="guessInput" placeholder="Введите число" min="1" max="100">
+                <br>
+                <button class="control-btn" onclick="checkGuess()" style="margin: 10px 0;">ПРОВЕРИТЬ</button>
+                <div class="guess-message" id="guessMessage"></div>
+                <div style="color: #ccc;">Попыток: <span id="guessAttempts">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран викторины -->
+    <div class="game-screen" id="quizScreen">
+        <div class="game-header">
+            <div style="color: #00f3ff; font-weight: bold;">ВИКТОРИНА</div>
+            <button class="back-btn" onclick="closeGame('quiz')">НАЗАД</button>
+        </div>
+        <div class="game-content">
+            <div style="width: 100%; max-width: 400px;">
+                <div class="quiz-question" id="quizQuestion"></div>
+                <div class="quiz-answers" id="quizAnswers"></div>
+                <div class="quiz-result" id="quizResult"></div>
+                <div style="text-align: center; color: #ccc;">Счет: <span id="quizScore">0/0</span></div>
+                <button class="control-btn" onclick="nextQuestion()" id="nextBtn" style="display: none; width: 100%; margin-top: 15px;">СЛЕДУЮЩИЙ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Управление экранами
+        function openGame(game) {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById(game + 'Screen').style.display = 'flex';
+            initGame(game);
+        }
+
+        function closeGame(game) {
+            document.getElementById(game + 'Screen').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'block';
+        }
+
+        function initGame(game) {
+            switch(game) {
+                case 'snake': initSnake(); break;
+                case 'memory': initMemory(); break;
+                case 'maze': initMaze(); break;
+                case 'guess': initGuess(); break;
+                case 'quiz': initQuiz(); break;
+            }
+        }
+
+        // Змейка
+        let snake = {
+            canvas: null,
+            ctx: null,
+            gridSize: 15,
+            snake: [],
+            direction: 'right',
+            food: {},
+            score: 0,
+            gameLoop: null
+        };
+
+        function initSnake() {
+            snake.canvas = document.getElementById('snakeCanvas');
+            snake.ctx = snake.canvas.getContext('2d');
+            
+            // Адаптивный размер для телефона
+            const size = Math.min(window.innerWidth - 40, 300);
+            snake.canvas.width = size;
+            snake.canvas.height = size;
+            snake.gridSize = Math.floor(size / 20);
+            
+            snake.snake = [
+                {x: 5, y: 10},
+                {x: 4, y: 10},
+                {x: 3, y: 10}
+            ];
+            
+            snake.direction = 'right';
+            snake.score = 0;
+            document.getElementById('snakeScore').textContent = '0';
+            generateFood();
+            
+            // Сенсорное управление
+            document.addEventListener('keydown', handleSnakeKey);
+            
+            // Свайпы для мобильных
+            let startX, startY;
+            snake.canvas.addEventListener('touchstart', e => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            });
+            
+            snake.canvas.addEventListener('touchmove', e => {
+                if (!startX || !startY) return;
+                
+                const endX = e.touches[0].clientX;
+                const endY = e.touches[0].clientY;
+                const diffX = startX - endX;
+                const diffY = startY - endY;
+                
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (diffX > 0 && snake.direction !== 'right') snake.direction = 'left';
+                    else if (diffX < 0 && snake.direction !== 'left') snake.direction = 'right';
+                } else {
+                    if (diffY > 0 && snake.direction !== 'down') snake.direction = 'up';
+                    else if (diffY < 0 && snake.direction !== 'up') snake.direction = 'down';
+                }
+                
+                startX = null;
+                startY = null;
+            });
+            
+            if (snake.gameLoop) clearInterval(snake.gameLoop);
+            snake.gameLoop = setInterval(gameTick, 150);
+        }
+
+        function handleSnakeKey(e) {
+            switch(e.key) {
+                case 'ArrowUp': if (snake.direction !== 'down') snake.direction = 'up'; break;
+                case 'ArrowDown': if (snake.direction !== 'up') snake.direction = 'down'; break;
+                case 'ArrowLeft': if (snake.direction !== 'right') snake.direction = 'left'; break;
+                case 'ArrowRight': if (snake.direction !== 'left') snake.direction = 'right'; break;
+            }
+        }
+
+        function gameTick() {
+            moveSnake();
+            checkCollision();
+            drawSnake();
+        }
+
+        function moveSnake() {
+            const head = {...snake.snake[0]};
+            
+            switch(snake.direction) {
+                case 'up': head.y--; break;
+                case 'down': head.y++; break;
+                case 'left': head.x--; break;
+                case 'right': head.x++; break;
+            }
+            
+            snake.snake.unshift(head);
+            
+            if (head.x === snake.food.x && head.y === snake.food.y) {
+                snake.score += 10;
+                document.getElementById('snakeScore').textContent = snake.score;
+                generateFood();
+            } else {
+                snake.snake.pop();
+            }
+        }
+
+        function checkCollision() {
+            const head = snake.snake[0];
+            const gridSize = snake.canvas.width / snake.gridSize;
+            
+            if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
+                resetSnake();
+                return;
+            }
+            
+            for (let i = 1; i < snake.snake.length; i++) {
+                if (head.x === snake.snake[i].x && head.y === snake.snake[i].y) {
+                    resetSnake();
+                    return;
+                }
+            }
+        }
+
+        function generateFood() {
+            const gridSize = snake.canvas.width / snake.gridSize;
+            snake.food = {
+                x: Math.floor(Math.random() * gridSize),
+                y: Math.floor(Math.random() * gridSize)
+            };
+        }
+
+        function drawSnake() {
+            snake.ctx.fillStyle = '#000';
+            snake.ctx.fillRect(0, 0, snake.canvas.width, snake.canvas.height);
+            
+            // Рисуем змейку
+            snake.snake.forEach((segment, index) => {
+                snake.ctx.fillStyle = index === 0 ? '#00ff88' : '#00f3ff';
+                snake.ctx.fillRect(
+                    segment.x * snake.gridSize,
+                    segment.y * snake.gridSize,
+                    snake.gridSize - 1,
+                    snake.gridSize - 1
+                );
+            });
+            
+            // Рисуем еду
+            snake.ctx.fillStyle = '#ff00ff';
+            snake.ctx.fillRect(
+                snake.food.x * snake.gridSize,
+                snake.food.y * snake.gridSize,
+                snake.gridSize - 1,
+                snake.gridSize - 1
+            );
+        }
+
+        function resetSnake() {
+            clearInterval(snake.gameLoop);
+            initSnake();
+        }
+
+        // Память
+        function initMemory() {
+            const symbols = ['🐍', '🚀', '🌟', '💎', '🎮', '👁️', '⚡', '💫'];
+            const cards = [...symbols, ...symbols];
+            cards.sort(() => Math.random() - 0.5);
+            
+            const grid = document.getElementById('memoryGrid');
+            grid.innerHTML = '';
+            
+            cards.forEach((symbol, index) => {
+                const card = document.createElement('div');
+                card.className = 'memory-card';
+                card.dataset.symbol = symbol;
+                card.dataset.index = index;
+                card.textContent = '?';
+                card.onclick = () => flipCard(card);
+                grid.appendChild(card);
+            });
+            
+            document.getElementById('memoryMoves').textContent = '0';
+        }
+
+        let flippedCards = [];
+        let moves = 0;
+
+        function flipCard(card) {
+            if (flippedCards.length === 2 || card.classList.contains('flipped')) return;
+            
+            card.classList.add('flipped');
+            card.textContent = card.dataset.symbol;
+            flippedCards.push(card);
+            
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('memoryMoves').textContent = moves;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            
+            if (card1.dataset.symbol === card2.dataset.symbol) {
+                setTimeout(() => {
+                    card1.style.visibility = 'hidden';
+                    card2.style.visibility = 'hidden';
+                    flippedCards = [];
+                    
+                    if (document.querySelectorAll('.memory-card[style*="visibility: hidden"]').length === 16) {
+                        setTimeout(() => alert(`🎉 Победа! Ходов: ${moves}`), 300);
+                    }
+                }, 500);
+            } else {
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    card1.textContent = '?';
+                    card2.textContent = '?';
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        function resetMemory() {
+            initMemory();
+            moves = 0;
+            flippedCards = [];
+        }
+
+        // Лабиринт
+        let mazeGame = {
+            grid: [],
+            player: {x: 1, y: 1},
+            end: {x: 13, y: 13},
+            steps: 0
+        };
+
+        function initMaze() {
+            const mazeLayout = [
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+                [1,1,1,0,1,0,1,1,1,1,1,1,1,0,1],
+                [1,0,0,0,1,0,0,0,0,0,0,0,1,0,1],
+                [1,0,1,1,1,1,1,1,1,1,1,0,1,0,1],
+                [1,0,0,0,0,0,0,0,0,0,1,0,1,0,1],
+                [1,1,1,1,1,1,1,1,1,0,1,0,1,0,1],
+                [1,0,0,0,0,0,0,0,1,0,1,0,1,0,1],
+                [1,0,1,1,1,1,1,0,1,0,1,0,1,0,1],
+                [1,0,1,0,0,0,1,0,1,0,1,0,1,0,1],
+                [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+                [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+                [1,0,1,0,1,0,0,0,1,0,0,0,1,0,1],
+                [1,0,1,0,1,1,1,1,1,1,1,1,1,0,1],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            ];
+
+            mazeGame.grid = mazeLayout;
+            mazeGame.player = {x: 1, y: 1};
+            mazeGame.steps = 0;
+            document.getElementById('mazeSteps').textContent = '0';
+            drawMaze();
+        }
+
+        function drawMaze() {
+            const grid = document.getElementById('mazeGrid');
+            grid.innerHTML = '';
+            
+            for (let y = 0; y < 15; y++) {
+                for (let x = 0; x < 15; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'maze-cell';
+                    
+                    if (mazeGame.grid[y][x] === 1) {
+                        cell.classList.add('wall');
+                    }
+                    
+                    if (x === mazeGame.player.x && y === mazeGame.player.y) {
+                        cell.classList.add('player');
+                    }
+                    
+                    if (x === mazeGame.end.x && y === mazeGame.end.y) {
+                        cell.classList.add('end');
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function movePlayer(direction) {
+            let newX = mazeGame.player.x;
+            let newY = mazeGame.player.y;
+            
+            switch(direction) {
+                case 'up': newY--; break;
+                case 'down': newY++; break;
+                case 'left': newX--; break;
+                case 'right': newX++; break;
+            }
+            
+            if (newX >= 0 && newX < 15 && newY >= 0 && newY < 15 && mazeGame.grid[newY][newX] === 0) {
+                mazeGame.player.x = newX;
+                mazeGame.player.y = newY;
+                mazeGame.steps++;
+                document.getElementById('mazeSteps').textContent = mazeGame.steps;
+                drawMaze();
+                
+                if (mazeGame.player.x === mazeGame.end.x && mazeGame.player.y === mazeGame.end.y) {
+                    setTimeout(() => {
+                        alert(`🎉 Победа! Шагов: ${mazeGame.steps}`);
+                    }, 300);
+                }
+            }
+        }
+
+        function resetMaze() {
+            initMaze();
+        }
+
+        // Угадай число
+        let guessGame = {
+            secretNumber: 0,
+            attempts: 0
+        };
+
+        function initGuess() {
+            guessGame.secretNumber = Math.floor(Math.random() * 100) + 1;
+            guessGame.attempts = 0;
+            document.getElementById('guessMessage').textContent = '';
+            document.getElementById('guessAttempts').textContent = '0';
+            document.getElementById('guessInput').value = '';
+        }
+
+        function checkGuess() {
+            const userGuess = parseInt(document.getElementById('guessInput').value);
+            const messageElement = document.getElementById('guessMessage');
+            
+            if (isNaN(userGuess) || userGuess < 1 || userGuess > 100) {
+                messageElement.textContent = 'Введите число от 1 до 100!';
+                messageElement.style.color = '#ff4444';
+                return;
+            }
+            
+            guessGame.attempts++;
+            document.getElementById('guessAttempts').textContent = guessGame.attempts;
+            
+            if (userGuess === guessGame.secretNumber) {
+                messageElement.textContent = `🎉 Угадал! Число: ${guessGame.secretNumber}`;
+                messageElement.style.color = '#00ff88';
+            } else if (userGuess < guessGame.secretNumber) {
+                messageElement.textContent = '📈 Больше!';
+                messageElement.style.color = '#00f3ff';
+            } else {
+                messageElement.textContent = '📉 Меньше!';
+                messageElement.style.color = '#ffaa00';
+            }
+            
+            document.getElementById('guessInput').value = '';
+        }
+
+        // Викторина
+        let quizGame = {
+            questions: [
+                {
+                    question: "Какая планета самая большая в Солнечной системе?",
+                    answers: ["Земля", "Марс", "Юпитер", "Сатурн"],
+                    correct: 2
+                },
+                {
+                    question: "Сколько цветов в радуге?",
+                    answers: ["5", "6", "7", "8"],
+                    correct: 2
+                },
+                {
+                    question: "Какое животное самое быстрое на суше?",
+                    answers: ["Лев", "Гепард", "Антилопа", "Лошадь"],
+                    correct: 1
+                }
+            ],
+            currentQuestion: 0,
+            score: 0
+        };
+
+        function initQuiz() {
+            quizGame.currentQuestion = 0;
+            quizGame.score = 0;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (quizGame.currentQuestion >= quizGame.questions.length) {
+                document.getElementById('quizQuestion').textContent = 'Викторина завершена!';
+                document.getElementById('quizAnswers').innerHTML = '';
+                document.getElementById('quizResult').textContent = `Правильных ответов: ${quizGame.score}/${quizGame.questions.length}`;
+                document.getElementById('nextBtn').style.display = 'none';
+                return;
+            }
+            
+            const question = quizGame.questions[quizGame.currentQuestion];
+            document.getElementById('quizQuestion').textContent = question.question;
+            document.getElementById('quizResult').textContent = '';
+            document.getElementById('nextBtn').style.display = 'none';
+            
+            const answersHTML = question.answers.map((answer, index) => 
+                `<button class="quiz-answer" onclick="checkQuizAnswer(${index})">${answer}</button>`
+            ).join('');
+            
+            document.getElementById('quizAnswers').innerHTML = answersHTML;
+            document.getElementById('quizScore').textContent = `${quizGame.score}/${quizGame.currentQuestion}`;
+        }
+
+        function checkQuizAnswer(selectedIndex) {
+            const question = quizGame.questions[quizGame.currentQuestion];
+            const answerButtons = document.querySelectorAll('.quiz-answer');
+            
+            answerButtons.forEach((btn, index) => {
+                btn.disabled = true;
+                if (index === question.correct) {
+                    btn.style.background = '#00ff88';
+                    btn.style.color = '#000';
+                } else if (index === selectedIndex) {
+                    btn.style.background = '#ff4444';
+                    btn.style.color = '#000';
+                }
+            });
+            
+            if (selectedIndex === question.correct) {
+                quizGame.score++;
+                document.getElementById('quizResult').textContent = '✅ Правильно!';
+                document.getElementById('quizResult').style.color = '#00ff88';
+            } else {
+                document.getElementById('quizResult').textContent = '❌ Неправильно!';
+                document.getElementById('quizResult').style.color = '#ff4444';
+            }
+            
+            document.getElementById('quizScore').textContent = `${quizGame.score}/${quizGame.currentQuestion + 1}`;
+            document.getElementById('nextBtn').style.display = 'block';
+        }
+
+        function nextQuestion() {
+            quizGame.currentQuestion++;
+            showQuestion();
+        }
+
+        // Инициализация при загрузке
+        window.addEventListener('load', function() {
+            // Авто-инициализация первой игры при необходимости
+        });
+    </script>
+</body>
+</html>
